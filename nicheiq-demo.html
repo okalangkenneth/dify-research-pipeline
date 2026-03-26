@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NicheIQ — AI Product Intelligence for Etsy Sellers</title>
+<style>
+  :root {
+    --bg:#0f0f13;--surface:#17171e;--surface2:#1e1e28;--border:#2a2a38;
+    --accent:#7c6af7;--glow:rgba(124,106,247,0.18);--accent2:#f7c06a;
+    --go:#4ade80;--nogo:#f87171;--text:#e8e8f0;--muted:#7b7b99;--r:12px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;min-height:100vh;}
+  header{border-bottom:1px solid var(--border);padding:18px 40px;display:flex;align-items:center;justify-content:space-between;}
+  .logo{display:flex;align-items:center;gap:10px;}
+  .logo-mark{width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#a78bfa);display:flex;align-items:center;justify-content:center;font-size:17px;}
+  .logo-text{font-size:18px;font-weight:700;letter-spacing:-.3px;}
+  .logo-text span{color:var(--accent);}
+  .badge{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;background:var(--glow);color:var(--accent);border:1px solid rgba(124,106,247,.3);letter-spacing:.5px;text-transform:uppercase;}
+  .hero{text-align:center;padding:56px 40px 32px;max-width:680px;margin:0 auto;}
+  .hero h1{font-size:42px;font-weight:800;line-height:1.1;letter-spacing:-1px;margin-bottom:14px;}
+  .hero h1 span{color:var(--accent);}
+  .hero p{color:var(--muted);font-size:17px;line-height:1.6;}
+  .search-wrap{max-width:620px;margin:0 auto 12px;padding:0 40px;}
+  .search-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:6px 6px 6px 20px;display:flex;align-items:center;gap:10px;transition:border-color .2s;}
+  .search-box:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--glow);}
+  .search-box input{flex:1;background:none;border:none;outline:none;color:var(--text);font-size:16px;padding:10px 0;}
+  .search-box input::placeholder{color:var(--muted);}
+  .search-btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:11px 22px;font-size:15px;font-weight:600;cursor:pointer;white-space:nowrap;transition:opacity .2s,transform .1s;}
+  .search-btn:hover{opacity:.88;}
+  .search-btn:active{transform:scale(.97);}
+  .search-btn:disabled{opacity:.45;cursor:not-allowed;}
+</style>
+<style>
+  /* ── TRENDING CHIPS ── */
+  .trending-wrap{max-width:620px;margin:0 auto 40px;padding:0 40px;}
+  .trending-label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+  .trending-label::before{content:'✦';}
+  .trending-sublabel{font-size:11px;color:var(--muted);margin-bottom:10px;opacity:.7;}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;}
+  .chip{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:7px 14px;font-size:13px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:6px;color:var(--text);}
+  .chip:hover{border-color:var(--accent);background:var(--glow);color:var(--accent);}
+  .chip-emoji{font-size:15px;}
+  .chip-reason{font-size:11px;color:var(--muted);margin-top:1px;}
+  .chip-loading{display:flex;gap:8px;}
+  .chip-skeleton{height:34px;width:120px;background:var(--surface);border:1px solid var(--border);border-radius:20px;animation:pulse 1.4s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:.4;}50%{opacity:.9;}}
+
+  /* ── LOADING ── */
+  .loading{display:none;text-align:center;padding:48px 40px;max-width:620px;margin:0 auto;}
+  .loading.active{display:block;}
+  .spinner{width:40px;height:40px;margin:0 auto 20px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .loading-steps{list-style:none;display:flex;flex-direction:column;gap:8px;}
+  .loading-steps li{color:var(--muted);font-size:14px;transition:color .4s;display:flex;align-items:center;justify-content:center;gap:8px;}
+  .loading-steps li.active{color:var(--text);}
+  .loading-steps li.done{color:var(--go);}
+  .step-dot{width:7px;height:7px;border-radius:50%;background:var(--border);flex-shrink:0;transition:background .4s;}
+  .loading-steps li.active .step-dot{background:var(--accent);}
+  .loading-steps li.done .step-dot{background:var(--go);}
+
+  /* ── RESULTS ── */
+  #results{display:none;max-width:900px;margin:0 auto 80px;padding:0 40px;}
+  #results.active{display:block;}
+  .verdict-banner{border-radius:var(--r);padding:24px 28px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;}
+  .verdict-banner.go{background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.25);}
+  .verdict-banner.nogo{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);}
+  .verdict-label{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
+  .verdict-banner.go .verdict-label{color:var(--go);}
+  .verdict-banner.nogo .verdict-label{color:var(--nogo);}
+  .verdict-title{font-size:22px;font-weight:800;}
+  .verdict-reason{color:var(--muted);font-size:14px;margin-top:4px;}
+  .score-ring{width:74px;height:74px;flex-shrink:0;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;}
+  .score-ring.high{background:rgba(74,222,128,.12);border:2px solid var(--go);color:var(--go);}
+  .score-ring.mid{background:rgba(247,192,106,.12);border:2px solid var(--accent2);color:var(--accent2);}
+  .score-ring.low{background:rgba(248,113,113,.12);border:2px solid var(--nogo);color:var(--nogo);}
+  .score-num{font-size:26px;line-height:1;}
+  .score-label{font-size:10px;opacity:.7;text-transform:uppercase;letter-spacing:.5px;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+  .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;}
+  .card-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:10px;}
+  .card-value{font-size:15px;line-height:1.55;color:var(--text);}
+  .card-value.big{font-size:26px;font-weight:800;color:var(--accent2);}
+  .tags-wrap{display:flex;flex-wrap:wrap;gap:8px;}
+  .tag{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:12px;color:var(--muted);font-family:monospace;}
+  .tag:hover{border-color:var(--accent);color:var(--text);}
+  .title-option{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:11px 14px;margin-bottom:8px;font-size:14px;cursor:pointer;transition:border-color .15s;display:flex;align-items:center;justify-content:space-between;}
+  .title-option:hover{border-color:var(--accent);}
+  .title-option.recommended{border-color:var(--accent);background:var(--glow);}
+  .rec-chip{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--accent);background:rgba(124,106,247,.15);border-radius:4px;padding:2px 6px;flex-shrink:0;}
+  .data-source{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:4px 12px;margin-bottom:20px;}
+  .data-dot{width:7px;height:7px;border-radius:50%;background:var(--go);}
+  .data-dot.fallback{background:var(--accent2);}
+  .copy-btn{background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;transition:all .15s;}
+  .copy-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .error-box{display:none;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.3);border-radius:var(--r);padding:20px 24px;color:var(--nogo);max-width:620px;margin:0 auto 40px;}
+  .error-box.active{display:block;}
+  @media(max-width:640px){
+    .grid,.grid-3{grid-template-columns:1fr;}
+    header,.hero,.search-wrap,.trending-wrap,#results{padding-left:20px;padding-right:20px;}
+    .hero h1{font-size:30px;}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><div class="logo-mark">🧠</div><div class="logo-text">Niche<span>IQ</span></div></div>
+  <div class="badge">Beta</div>
+</header>
+
+<div class="hero">
+  <h1>Know before you<br><span>build.</span></h1>
+  <p>Enter a product idea. NicheIQ scrapes live Etsy data, runs it through three AI agents, and returns a complete market brief in under 60 seconds.</p>
+</div>
+
+<div class="search-wrap">
+  <div class="search-box">
+    <span style="font-size:18px">🔍</span>
+    <input type="text" id="topicInput" placeholder="e.g. ADHD daily planner, wedding budget spreadsheet…" />
+    <button class="search-btn" id="analyzeBtn" onclick="runAnalysis()">Analyze →</button>
+  </div>
+</div>
+
+<!-- Trending chips -->
+<div class="trending-wrap">
+  <div class="trending-label">AI-selected opportunities — click to analyze instantly</div>
+  <div class="trending-sublabel">Pre-screened for demand + low saturation · not all will be winners, that's the point</div>
+  <div class="chips" id="chipsContainer">
+    <div class="chip-loading">
+      <div class="chip-skeleton"></div>
+      <div class="chip-skeleton"></div>
+      <div class="chip-skeleton"></div>
+      <div class="chip-skeleton"></div>
+      <div class="chip-skeleton"></div>
+    </div>
+  </div>
+</div>
+
+<div class="loading" id="loadingState">
+  <div class="spinner"></div>
+  <p style="color:var(--muted);margin-bottom:20px;font-size:14px">Analyzing your market…</p>
+  <ul class="loading-steps">
+    <li id="step1"><div class="step-dot"></div>Scraping live Etsy listings</li>
+    <li id="step2"><div class="step-dot"></div>Research Agent: extracting market signals</li>
+    <li id="step3"><div class="step-dot"></div>Analysis Agent: scoring the opportunity</li>
+    <li id="step4"><div class="step-dot"></div>Brief Writer: building your product brief</li>
+    <li id="step5"><div class="step-dot"></div>Validating pipeline output</li>
+  </ul>
+</div>
+
+<div class="error-box" id="errorBox"></div>
+
+<div id="results">
+  <div class="data-source"><div class="data-dot" id="dataDot"></div><span id="dataSourceText"></span></div>
+  <div class="verdict-banner" id="verdictBanner">
+    <div>
+      <div class="verdict-label" id="verdictLabel"></div>
+      <div class="verdict-title" id="verdictTitle"></div>
+      <div class="verdict-reason" id="verdictReason"></div>
+    </div>
+    <div class="score-ring" id="scoreRing"><div class="score-num" id="scoreNum"></div><div class="score-label">/ 10</div></div>
+  </div>
+  <div class="grid-3">
+    <div class="card"><div class="card-label">Recommended Price</div><div class="card-value big" id="priceVal"></div></div>
+    <div class="card"><div class="card-label">Saturation Risk</div><div class="card-value big" id="satVal" style="font-size:18px;padding-top:6px"></div></div>
+    <div class="card"><div class="card-label">Listings Sampled</div><div class="card-value big" id="listingsVal"></div></div>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-label" style="margin-bottom:14px">Title Options</div>
+    <div id="titlesWrap"></div>
+  </div>
+  <div class="grid">
+    <div class="card"><div class="card-label">Market Gap Identified</div><div class="card-value" id="gapVal"></div></div>
+    <div class="card"><div class="card-label">Differentiation Angle</div><div class="card-value" id="diffVal"></div></div>
+  </div>
+  <div class="grid">
+    <div class="card">
+      <div class="card-label" style="display:flex;justify-content:space-between;align-items:center">Product Description <button class="copy-btn" onclick="copyText('descVal')">Copy</button></div>
+      <div class="card-value" id="descVal" style="margin-top:10px;font-size:14px;line-height:1.65;color:var(--muted)"></div>
+    </div>
+    <div class="card">
+      <div class="card-label">Mockup Style</div>
+      <div class="card-value" id="mockupVal" style="margin-top:4px;color:var(--muted);font-size:14px;line-height:1.65"></div>
+      <div class="card-label" style="margin-top:18px">Format Recommendation</div>
+      <div class="card-value" id="formatVal" style="margin-top:4px"></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <div class="card-label" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">Etsy Tags (13) <button class="copy-btn" onclick="copyTags()">Copy all</button></div>
+    <div class="tags-wrap" id="tagsWrap"></div>
+  </div>
+  <div class="card" style="margin-top:16px;border-color:rgba(124,106,247,.3);background:var(--glow)">
+    <div class="card-label" style="color:var(--accent)">⚡ Quick Win — Do This in the Next 48 Hours</div>
+    <div class="card-value" id="quickWinVal" style="margin-top:6px"></div>
+  </div>
+</div>
+
+<script>
+let tags = [];
+
+function getCsrf() {
+  return document.cookie.split('; ').find(r => r.startsWith('csrf_token='))?.split('=')[1] ?? '';
+}
+function setStep(n, state) {
+  for (let i = 1; i <= 5; i++) {
+    const el = document.getElementById('step' + i);
+    el.classList.remove('active', 'done');
+    if (i < n) el.classList.add('done');
+    if (i === n) el.classList.add(state);
+  }
+}
+function animateSteps() {
+  [0, 2500, 6000, 10000, 16000].forEach((d, i) => setTimeout(() => setStep(i + 1, 'active'), d));
+}
+
+// ── Load trending chips on page load ──────────────────────────
+async function loadTrending() {
+  try {
+    const resp = await fetch('/console/api/nicheiq/trending', {
+      headers: { 'X-CSRF-Token': getCsrf() },
+      credentials: 'include'
+    });
+    if (!resp.ok) throw new Error('not ok');
+    const data = await resp.json();
+    renderChips(data.trending || []);
+  } catch (e) {
+    // Silently hide the trending section if not logged in or API fails
+    document.querySelector('.trending-wrap').style.display = 'none';
+  }
+}
+
+function renderChips(ideas) {
+  const container = document.getElementById('chipsContainer');
+  if (!ideas.length) { container.closest('.trending-wrap').style.display = 'none'; return; }
+  container.innerHTML = ideas.map(item => `
+    <div class="chip" onclick="selectChip(this, '${item.idea.replace(/'/g, "\\'")}')">
+      <span class="chip-emoji">${item.emoji}</span>
+      <div>
+        <div>${item.idea}</div>
+        <div class="chip-reason">↗ ${item.reason}</div>
+      </div>
+    </div>`).join('');
+}
+
+function selectChip(el, idea) {
+  document.querySelectorAll('.chip').forEach(c => c.style.borderColor = '');
+  el.style.borderColor = 'var(--accent)';
+  document.getElementById('topicInput').value = idea;
+  runAnalysis();
+}
+
+// ── Main analysis ──────────────────────────────────────────────
+async function runAnalysis() {
+  const topic = document.getElementById('topicInput').value.trim();
+  if (!topic) return;
+  document.getElementById('results').classList.remove('active');
+  document.getElementById('errorBox').classList.remove('active');
+  document.getElementById('loadingState').classList.add('active');
+  document.getElementById('analyzeBtn').disabled = true;
+  for (let i = 1; i <= 5; i++) document.getElementById('step' + i).classList.remove('active', 'done');
+  animateSteps();
+  try {
+    const resp = await fetch('/console/api/nicheiq/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf() },
+      credentials: 'include',
+      body: JSON.stringify({ product_idea: topic })
+    });
+    const data = await resp.json();
+    document.getElementById('loadingState').classList.remove('active');
+    document.getElementById('analyzeBtn').disabled = false;
+    if (!resp.ok) { showError(data.message || 'Something went wrong.'); return; }
+    if (data.pipeline_complete === 'false') { showError('Pipeline error: ' + (data.errors || 'Unknown')); return; }
+    renderResults(data);
+  } catch (err) {
+    document.getElementById('loadingState').classList.remove('active');
+    document.getElementById('analyzeBtn').disabled = false;
+    showError('Network error — is Dify running? (' + err.message + ')');
+  }
+}
+
+function showError(msg) {
+  const box = document.getElementById('errorBox');
+  box.textContent = '⚠ ' + msg;
+  box.classList.add('active');
+}
+
+function renderResults(d) {
+  const isLive = d.market_data_source === 'etsy_live';
+  document.getElementById('dataDot').className = 'data-dot' + (isLive ? '' : ' fallback');
+  document.getElementById('dataSourceText').textContent = isLive
+    ? `Live Etsy data · ${d.listings_sampled} listings scraped`
+    : 'LLM knowledge only (live scrape unavailable)';
+  const isGo = d.go_no_go === 'GO';
+  document.getElementById('verdictBanner').className = 'verdict-banner ' + (isGo ? 'go' : 'nogo');
+  document.getElementById('verdictLabel').textContent = isGo ? '✓ Strong Signal' : '✗ Caution';
+  document.getElementById('verdictTitle').textContent = isGo ? 'GO — Build This Product' : 'NO-GO — Reconsider';
+  document.getElementById('verdictReason').textContent = d.go_no_go_reason || '';
+  const score = parseInt(d.opportunity_score) || 0;
+  document.getElementById('scoreRing').className = 'score-ring ' + (score >= 7 ? 'high' : score >= 4 ? 'mid' : 'low');
+  document.getElementById('scoreNum').textContent = score;
+  document.getElementById('priceVal').textContent = d.recommended_price ? '$' + d.recommended_price : '—';
+  const satEl = document.getElementById('satVal');
+  satEl.textContent = d.saturation_risk || '—';
+  const sat = (d.saturation_risk || '').toLowerCase();
+  satEl.style.color = sat === 'low' ? 'var(--go)' : sat === 'high' ? 'var(--nogo)' : 'var(--accent2)';
+  document.getElementById('listingsVal').textContent = d.listings_sampled > 0 ? d.listings_sampled : '—';
+  let brief = {};
+  try { brief = JSON.parse(d.full_brief || '{}'); } catch(e) {}
+  const opts = brief.product_title_options || [];
+  const rec = d.recommended_title || '';
+  const titles = rec ? [rec, ...opts.filter(t => t !== rec)].slice(0,3) : opts.slice(0,3);
+  document.getElementById('titlesWrap').innerHTML = titles.map((t, i) =>
+    `<div class="title-option ${i===0?'recommended':''}"><span>${t}</span>${i===0?'<span class="rec-chip">Recommended</span>':''}</div>`
+  ).join('');
+  document.getElementById('gapVal').textContent = d.market_gap || '—';
+  document.getElementById('diffVal').textContent = d.differentiation_angle || '—';
+  document.getElementById('descVal').textContent = d.product_description || '—';
+  document.getElementById('mockupVal').textContent = brief.mockup_style || d.mockup_style || '—';
+  document.getElementById('formatVal').textContent = brief.format_recommendation || '—';
+  tags = [];
+  try { tags = JSON.parse(d.etsy_tags || '[]'); } catch(e) { tags = d.etsy_tags || []; }
+  document.getElementById('tagsWrap').innerHTML = tags.map(t => `<div class="tag">${t}</div>`).join('');
+  document.getElementById('quickWinVal').textContent = d.quick_win_tip || '—';
+  document.getElementById('results').classList.add('active');
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function copyText(id) { navigator.clipboard.writeText(document.getElementById(id).textContent).then(() => alert('Copied!')); }
+function copyTags() { navigator.clipboard.writeText(tags.join(', ')).then(() => alert('Tags copied!')); }
+document.getElementById('topicInput').addEventListener('keydown', e => { if (e.key === 'Enter') runAnalysis(); });
+
+// Load trending on boot
+loadTrending();
+</script>
+</body>
+</html>

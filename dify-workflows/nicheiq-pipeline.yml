@@ -1,0 +1,347 @@
+app:
+  description: 'NicheIQ: Multi-agent market intelligence for digital product sellers'
+  icon: 🧠
+  icon_background: '#F0F4FF'
+  mode: workflow
+  name: NicheIQ Research Pipeline
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.3.1
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload: {enabled: false}
+    opening_statement: ''
+    retriever_resource: {enabled: false}
+    sensitive_word_avoidance: {enabled: false}
+    speech_to_text: {enabled: false}
+    suggested_questions: []
+    suggested_questions_after_answer: {enabled: false}
+    text_to_speech: {enabled: false}
+  graph:
+    edges:
+    - id: e1
+      source: start_node
+      sourceHandle: source
+      target: research_agent
+      targetHandle: target
+      type: custom
+      data: {isInIteration: false, isInLoop: false, sourceType: start, targetType: llm}
+    - id: e2
+      source: research_agent
+      sourceHandle: source
+      target: analysis_agent
+      targetHandle: target
+      type: custom
+      data: {isInIteration: false, isInLoop: false, sourceType: llm, targetType: llm}
+    - id: e3
+      source: analysis_agent
+      sourceHandle: source
+      target: brief_writer
+      targetHandle: target
+      type: custom
+      data: {isInIteration: false, isInLoop: false, sourceType: llm, targetType: llm}
+    - id: e4
+      source: brief_writer
+      sourceHandle: source
+      target: output_validator
+      targetHandle: target
+      type: custom
+      data: {isInIteration: false, isInLoop: false, sourceType: llm, targetType: code}
+    - id: e5
+      source: output_validator
+      sourceHandle: source
+      target: end_node
+      targetHandle: target
+      type: custom
+      data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: end}
+    nodes:
+
+    # ── START NODE ────────────────────────────────────────────────
+    - data:
+        type: start
+        title: Start
+        desc: 'Product idea + live Etsy market data from the Flask scraper'
+        variables:
+        - label: Product Idea
+          variable: topic
+          type: paragraph
+          required: true
+          max_length: 300
+          options: []
+        - label: Market Data (JSON)
+          variable: market_data
+          type: paragraph
+          required: true
+          max_length: 8000
+          options: []
+      id: start_node
+      position: {x: 30, y: 280}
+      type: custom
+      width: 244
+      height: 148
+
+    # ── RESEARCH AGENT ────────────────────────────────────────────
+    # Takes raw Etsy scraped data, extracts structured market signals
+    - data:
+        type: llm
+        title: Research Agent
+        desc: 'Extracts market patterns from live Etsy data'
+        model:
+          provider: anthropic
+          name: claude-haiku-4-5-20251001
+          mode: chat
+          completion_params: {temperature: 0.2, max_tokens: 1500}
+        prompt_template:
+        - role: system
+          text: |
+            You are a Market Research Specialist for digital products on Etsy.
+            You receive raw scraped Etsy data and extract clean, structured signals.
+
+            Respond ONLY with valid JSON. No markdown. No preamble. No explanation.
+
+            Output this exact schema:
+            {
+              "product_idea": "string",
+              "total_listings_found": number,
+              "price_range": {"min": number, "max": number, "median": number},
+              "top_keywords": ["string x5"],
+              "best_selling_titles": ["string x3"],
+              "avg_review_count": number,
+              "high_review_outliers": ["title: string, reviews: number"],
+              "seller_concentration": "one-dominant|spread|niche",
+              "listing_quality_signal": "low|medium|high",
+              "demand_signals": ["evidence of demand from titles/reviews"],
+              "supply_signals": ["evidence of saturation or gaps"],
+              "data_confidence": 0.0-1.0
+            }
+        - role: user
+          text: |
+            Product idea: {{#start_node.topic#}}
+
+            Raw Etsy market data:
+            {{#start_node.market_data#}}
+        vision: {enabled: false}
+        memory: {enabled: false, window: {enabled: false, size: 10}}
+        context: {enabled: false}
+        structured_output: {enabled: false}
+        retry_config: {enabled: true, max_retries: 2, retry_interval: 1000}
+      id: research_agent
+      position: {x: 334, y: 200}
+      type: custom
+      width: 244
+      height: 122
+
+    # ── ANALYSIS AGENT ────────────────────────────────────────────
+    # Takes research signals, produces opportunity score + strategic insight
+    - data:
+        type: llm
+        title: Analysis Agent
+        desc: 'Scores the opportunity and identifies the gap to exploit'
+        model:
+          provider: anthropic
+          name: claude-haiku-4-5-20251001
+          mode: chat
+          completion_params: {temperature: 0.3, max_tokens: 1500}
+        prompt_template:
+        - role: system
+          text: |
+            You are a Strategic Market Analyst specialising in Etsy digital products.
+            You receive structured market research and produce an actionable opportunity analysis.
+
+            Respond ONLY with valid JSON. No markdown. No preamble.
+
+            Output this exact schema:
+            {
+              "opportunity_score": 0-10,
+              "opportunity_score_rationale": "string (1 sentence)",
+              "verdict": "strong-go|go|borderline|no-go",
+              "market_gap": "string — the specific unmet need you identified",
+              "ideal_customer": "string — who is suffering this problem most",
+              "saturation_risk": "low|medium|high",
+              "saturation_rationale": "string",
+              "pricing_sweet_spot": {"recommended": number, "floor": number, "ceiling": number},
+              "differentiation_angle": "string — one specific way to stand out",
+              "biggest_risk": "string",
+              "key_insight": "string — the single most useful thing to know"
+            }
+        - role: user
+          text: |
+            Product idea: {{#start_node.topic#}}
+
+            Market research data:
+            {{#research_agent.text#}}
+        vision: {enabled: false}
+        memory: {enabled: false, window: {enabled: false, size: 10}}
+        context: {enabled: false}
+        structured_output: {enabled: false}
+        retry_config: {enabled: true, max_retries: 2, retry_interval: 1000}
+      id: analysis_agent
+      position: {x: 638, y: 200}
+      type: custom
+      width: 244
+      height: 122
+
+    # ── BRIEF WRITER AGENT ────────────────────────────────────────
+    # Takes analysis, produces the ready-to-use product brief
+    - data:
+        type: llm
+        title: Brief Writer
+        desc: 'Produces the complete, actionable NicheIQ product brief'
+        model:
+          provider: anthropic
+          name: claude-haiku-4-5-20251001
+          mode: chat
+          completion_params: {temperature: 0.6, max_tokens: 2000}
+        prompt_template:
+        - role: system
+          text: |
+            You are a Senior Digital Product Strategist. You write clear,
+            specific, ready-to-use product briefs for Etsy digital product sellers.
+            Every recommendation must be grounded in the research and analysis provided.
+            Do not add facts not present in the inputs.
+
+            Respond ONLY with valid JSON. No markdown. No preamble.
+
+            Output this exact schema:
+            {
+              "product_title_options": ["string x3 — Etsy-ready, 3-14 words each"],
+              "recommended_title": "string — the single best option",
+              "product_description": "string — 80-120 words, benefits-first, conversational",
+              "etsy_tags": ["string x13 — each max 20 chars, buyer search terms"],
+              "recommended_price": number,
+              "mockup_style": "string — specific visual style recommendation",
+              "format_recommendation": "string — PDF / Notion / Google Sheets / etc",
+              "quick_win_tip": "string — one thing to do in the first 48h after listing",
+              "go_no_go": "GO" or "NO-GO",
+              "go_no_go_reason": "string — one sentence"
+            }
+        - role: user
+          text: |
+            Product idea: {{#start_node.topic#}}
+
+            Market analysis:
+            {{#analysis_agent.text#}}
+
+            Supporting research:
+            {{#research_agent.text#}}
+        vision: {enabled: false}
+        memory: {enabled: false, window: {enabled: false, size: 10}}
+        context: {enabled: false}
+        structured_output: {enabled: false}
+        retry_config: {enabled: true, max_retries: 2, retry_interval: 1000}
+      id: brief_writer
+      position: {x: 942, y: 200}
+      type: custom
+      width: 244
+      height: 122
+
+    # ── OUTPUT VALIDATOR (CODE NODE) ──────────────────────────────
+    # Validates all three agents completed. Assembles final structured output.
+    - data:
+        type: code
+        title: Output Validator
+        desc: 'Validates pipeline completion and assembles final brief'
+        code_language: python3
+        code: |
+          import json, re
+
+          def strip_json(raw: str) -> dict:
+              clean = re.sub(r'```(?:json)?|```', '', raw or '').strip()
+              return json.loads(clean)
+
+          def main(research_raw: str, analysis_raw: str, brief_raw: str) -> dict:
+              errors = []
+
+              try:
+                  research = strip_json(research_raw)
+              except Exception as e:
+                  errors.append(f"Research Agent output invalid: {e}")
+                  research = {}
+
+              try:
+                  analysis = strip_json(analysis_raw)
+              except Exception as e:
+                  errors.append(f"Analysis Agent output invalid: {e}")
+                  analysis = {}
+
+              try:
+                  brief = strip_json(brief_raw)
+              except Exception as e:
+                  errors.append(f"Brief Writer output invalid: {e}")
+                  brief = {}
+
+              pipeline_complete = len(errors) == 0
+
+              return {
+                  "pipeline_complete": "true" if pipeline_complete else "false",
+                  "errors": json.dumps(errors),
+                  "go_no_go": brief.get("go_no_go", "UNKNOWN"),
+                  "opportunity_score": str(analysis.get("opportunity_score", 0)),
+                  "recommended_title": brief.get("recommended_title", ""),
+                  "recommended_price": str(brief.get("recommended_price", 0)),
+                  "product_description": brief.get("product_description", ""),
+                  "etsy_tags": json.dumps(brief.get("etsy_tags", [])),
+                  "market_gap": analysis.get("market_gap", ""),
+                  "differentiation_angle": analysis.get("differentiation_angle", ""),
+                  "quick_win_tip": brief.get("quick_win_tip", ""),
+                  "go_no_go_reason": brief.get("go_no_go_reason", ""),
+                  "mockup_style": brief.get("mockup_style", ""),
+                  "full_brief": json.dumps(brief),
+                  "full_analysis": json.dumps(analysis)
+              }
+        variables:
+        - {variable: research_raw, value_selector: [research_agent, text], label: research_raw}
+        - {variable: analysis_raw, value_selector: [analysis_agent, text], label: analysis_raw}
+        - {variable: brief_raw, value_selector: [brief_writer, text], label: brief_raw}
+        outputs:
+          pipeline_complete: {type: string, children: null}
+          errors: {type: string, children: null}
+          go_no_go: {type: string, children: null}
+          opportunity_score: {type: string, children: null}
+          recommended_title: {type: string, children: null}
+          recommended_price: {type: string, children: null}
+          product_description: {type: string, children: null}
+          etsy_tags: {type: string, children: null}
+          market_gap: {type: string, children: null}
+          differentiation_angle: {type: string, children: null}
+          quick_win_tip: {type: string, children: null}
+          go_no_go_reason: {type: string, children: null}
+          mockup_style: {type: string, children: null}
+          full_brief: {type: string, children: null}
+          full_analysis: {type: string, children: null}
+      id: output_validator
+      position: {x: 1246, y: 200}
+      type: custom
+      width: 244
+      height: 122
+
+    # ── END NODE ──────────────────────────────────────────────────
+    - data:
+        type: end
+        title: End
+        desc: 'Structured NicheIQ product brief'
+        outputs:
+        - {variable: pipeline_complete, value_selector: [output_validator, pipeline_complete], value_type: string}
+        - {variable: go_no_go, value_selector: [output_validator, go_no_go], value_type: string}
+        - {variable: opportunity_score, value_selector: [output_validator, opportunity_score], value_type: string}
+        - {variable: recommended_title, value_selector: [output_validator, recommended_title], value_type: string}
+        - {variable: recommended_price, value_selector: [output_validator, recommended_price], value_type: string}
+        - {variable: product_description, value_selector: [output_validator, product_description], value_type: string}
+        - {variable: etsy_tags, value_selector: [output_validator, etsy_tags], value_type: string}
+        - {variable: market_gap, value_selector: [output_validator, market_gap], value_type: string}
+        - {variable: differentiation_angle, value_selector: [output_validator, differentiation_angle], value_type: string}
+        - {variable: quick_win_tip, value_selector: [output_validator, quick_win_tip], value_type: string}
+        - {variable: go_no_go_reason, value_selector: [output_validator, go_no_go_reason], value_type: string}
+        - {variable: mockup_style, value_selector: [output_validator, mockup_style], value_type: string}
+        - {variable: full_brief, value_selector: [output_validator, full_brief], value_type: string}
+        - {variable: full_analysis, value_selector: [output_validator, full_analysis], value_type: string}
+        - {variable: errors, value_selector: [output_validator, errors], value_type: string}
+      id: end_node
+      position: {x: 1550, y: 200}
+      type: custom
+      width: 244
+      height: 122
+    viewport: {x: 0, y: 0, zoom: 0.6}

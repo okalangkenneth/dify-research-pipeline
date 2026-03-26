@@ -1,0 +1,6 @@
+dify/docker/.env
+dify/docker/.env.local
+dify/docker/volumes/
+__pycache__/
+*.pyc
+.DS_Store
