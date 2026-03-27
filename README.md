@@ -4,6 +4,9 @@
 
 **Portfolio Project 3** — Multi-agent AI pipeline built on [Dify](https://github.com/langgenius/dify) + Docker.
 
+<img width="1914" height="951" alt="image" src="https://github.com/user-attachments/assets/bc560148-401e-4b36-b73b-64bfd552c559" />
+
+
 🔗 [Live Demo](http://localhost/nicheiq.html) · [Project 1: Etsy Toolkit](https://github.com/okalangkenneth/dify-etsy-toolkit) · [Project 2: Support Agent](https://github.com/okalangkenneth/dify-customer-support-agent)
 
 ---
