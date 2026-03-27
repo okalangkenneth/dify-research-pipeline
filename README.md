@@ -1,10 +1,12 @@
 # NicheIQ — AI Market Intelligence for Etsy Sellers
 
+
+
 > *Know before you build.* Enter a product idea. NicheIQ scrapes live Etsy data, runs it through three specialised AI agents, and returns a complete market brief in under 60 seconds.
 
-**Portfolio Project 3** — Multi-agent AI pipeline built on [Dify](https://github.com/langgenius/dify) + Docker.
-
 <img width="1914" height="951" alt="image" src="https://github.com/user-attachments/assets/bc560148-401e-4b36-b73b-64bfd552c559" />
+
+**Portfolio Project 3** — Multi-agent AI pipeline built on [Dify](https://github.com/langgenius/dify) + Docker.
 
 
 🔗 [Live Demo](http://localhost/nicheiq.html) · [Project 1: Etsy Toolkit](https://github.com/okalangkenneth/dify-etsy-toolkit) · [Project 2: Support Agent](https://github.com/okalangkenneth/dify-customer-support-agent)
